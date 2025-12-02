@@ -1,0 +1,11 @@
+<?xml version="1.0" ?>
+<sdf version="1.9">
+  <world name="slatol_world">
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/ground plane</uri>
+    </include>
+    <include>
+      <uri>https://fuel.gazebosim.org/1.0/OpenRobotics/models/sun</uri>
+    </include>
+  </world>
+</sdf>

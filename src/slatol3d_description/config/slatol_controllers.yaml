@@ -1,0 +1,27 @@
+controller_manager:
+  ros__parameters:
+    update_rate: 100
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
+    slatol_position_controller:
+      type: position_controllers/JointGroupPositionController
+
+slatol_position_controller:
+  ros__parameters:
+    joints:
+      - hip_haa_joint
+      - hip_hfe_joint
+      - knee_kfe_joint
+    gains:
+      hip_haa_joint:
+        p: 50.0
+        d: 0.1
+        i: 0.0
+      hip_hfe_joint:
+        p: 50.0
+        d: 0.1
+        i: 0.0
+      knee_kfe_joint:
+        p: 50.0
+        d: 0.1
+        i: 0.0
