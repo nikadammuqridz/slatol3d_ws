@@ -144,4 +144,8 @@ The best way to show a "Launch and Fall" test in a README is using a **GIF**, as
 3.  **Push:**
 
       * Commit the GIF file and the README.
+<<<<<<< HEAD
       * Push to your repos.
+=======
+      * Push to your repos.
+>>>>>>> c4f3c3b9e361b1068b087f9dcee203ea7fb8b051
