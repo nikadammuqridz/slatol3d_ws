@@ -1,25 +1,19 @@
 <?xml version="1.0"?>
 <robot name="slatol" xmlns:xacro="http://www.ros.org/wiki/xacro">
 
-  <xacro:property name="pi" value="3.1415926535897931"/>
-  <xacro:property name="L1" value="0.30" />    <!-- Abduction Link Length -->
-  <xacro:property name="L2" value="0.35" />    <!-- Thigh Length -->
-  <xacro:property name="L3" value="0.35" />    <!-- Calf Length -->
-  <xacro:property name="base_size" value="0.3" />
+  <xacro:property name="L1" value="0.30" />    <xacro:property name="L2" value="0.35" />    <xacro:property name="L3" value="0.35" />    <xacro:property name="base_size" value="0.3" />
   <xacro:property name="link_radius" value="0.03" />
   
   <material name="Red"><color rgba="0.8 0 0 1"/></material>
   <material name="Blue"><color rgba="0 0 0.8 1"/></material>
   <material name="Black"><color rgba="0 0 0 1"/></material>
 
-  <!-- Base link (torso/body) - ROOT -->
   <link name="base_link">
     <visual><geometry><box size="${base_size} ${base_size} ${base_size}" /></geometry><material name="Red"/></visual>
     <collision><geometry><box size="${base_size} ${base_size} ${base_size}" /></geometry></collision>
     <inertial><mass value="5.0"/><inertia ixx="0.1" iyy="0.1" izz="0.1" ixy="0" ixz="0" iyz="0"/></inertial>
   </link>
 
-  <!-- Joint 1: Hip Abduction/Adduction (HAA) - Rotates about X -->
   <joint name="hip_haa_joint" type="revolute">
     <parent link="base_link"/>
     <child link="abduction_link"/>
@@ -40,7 +34,6 @@
     </transmission>
   </link>
 
-  <!-- Joint 2: Hip Flextion/Extension (HFE) - Rotates about Y -->
   <joint name="hip_hfe_joint" type="revolute">
     <parent link="abduction_link"/>
     <child link="thigh_link"/>
@@ -61,7 +54,6 @@
     </transmission>
   </link>
   
-  <!-- Joint 3: Knee Flextion/Extension (KFE) -->
   <joint name="knee_kfe_joint" type="revolute">
     <parent link="thigh_link"/>
     <child link="calf_link"/>
@@ -82,7 +74,6 @@
     </transmission>
   </link>
 
-  <!-- Final foot link (end-effector) -->
   <joint name="foot_fixed_joint" type="fixed">
     <parent link="calf_link"/>
     <child link="foot_link"/>
@@ -94,7 +85,6 @@
      <inertial><mass value="0.1"/><inertia ixx="0.001" iyy="0.001" izz="0.001" ixy="0" ixz="0" iyz="0"/></inertial>
   </link>
 
-  <!-- Gazebo Fortress: ROS 2 Control Plugin -->
   <gazebo>
     <plugin name="gazebo_ros2_control" filename="libgazebo_ros2_control.so">
       <parameters>$(find slatol3d_description)/config/slatol_controllers.yaml</parameters>
