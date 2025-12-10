@@ -1,26 +1,58 @@
-Here is the compiled **README.md** content and the specific setup instructions for your multi-git workflow and screen recording.
+Here is the updated, concise, and correct content for your `README.md`. I have integrated the **Developer Setup** (VS Code + Multi-Git) and **Screen Recording** instructions directly into the flow so it serves as a complete guide for you and anyone else using the repo.
 
-### **Part 1: The README.md File**
-
-Create a file named `README.md` in the root of your repository (`~/slatol3d_ws/src/slatol3d_bringup/README.md` or the workspace root) and paste this content.
+You can copy and paste the sections below directly into your `README.md` file.
 
 -----
 
 # SLATOL: Single-Legged Autonomous Takeoff and Landing Robot
 
-**Author:** Nik Adam Muqridz Bin Abdul Hakham (2125501)  
-**Supervisor:** Dr. Hafiz Bin Iman  
+**Author:** Nik Adam Muqridz Bin Abdul Hakham (2125501)
+**Supervisor:** Dr. Hafiz Bin Iman
 **Institution:** International Islamic University Malaysia (IIUM)
 
 ## 1\. Project Overview
 
 This project focuses on the design and control of a Single-Legged Micro Aerial Vehicle (MAV) capable of autonomous takeoff and landing (SLATOL). It addresses dynamic instability during ground-to-air transitions using a 3-DOF robotic leg integrated with a fixed-wing MAV concept.
 
-## 2\. Prerequisites
+## 2\. Developer Environment Setup
 
-  * **OS:** Ubuntu 22.04 LTS (Jammy Jellyfish)
-  * **ROS 2:** Humble Hawksbill
-  * **Simulator:** Gazebo Fortress
+> **⚠️ Important Reminder:** Follow these steps in order. This setup configures your environment so you can use the **VS Code "Sync Changes" button** to push to both GitHub and GitLab simultaneously without using the terminal every time.
+
+### Phase A: OS & Tools Installation
+
+1.  **Operating System:** Install **Ubuntu 22.04 LTS (Jammy Jellyfish)**.
+2.  **IDE:** Install **Visual Studio Code (VS Code)**.
+3.  **Recording Tool:** Install **Peek** (for creating GIF demos).
+    ```bash
+    sudo apt install peek
+    ```
+
+### Phase B: Configure Simultaneous Git Push (One-Time Setup)
+
+Run these commands **once** in your terminal inside the repo folder (`~/slatol3d_ws/src/`) to link both repositories.
+
+1.  **Initialize & Add Primary Remote (GitHub):**
+
+    ```bash
+    git init
+    git remote add origin https://github.com/YOUR_USERNAME/slatol3d.git
+    ```
+
+2.  **Add Secondary Remote (GitLab):**
+
+    ```bash
+    git remote add gitlab https://gitlab.com/YOUR_USERNAME/slatol3d.git
+    ```
+
+3.  **Link Remotes for Simultaneous Push:**
+    *This configures the 'origin' push URL to send data to BOTH links automatically.*
+
+    ```bash
+    git remote set-url --add --push origin https://github.com/YOUR_USERNAME/slatol3d.git
+    git remote set-url --add --push origin https://gitlab.com/YOUR_USERNAME/slatol3d.git
+    ```
+
+    > **Verification:** Run `git remote -v`. You should see two `(push)` lines for `origin`. Now, simply click "Sync Changes" in VS Code to update both clouds\!
 
 ## 3\. Installation Guide
 
@@ -39,8 +71,8 @@ sudo apt install ros-humble-desktop -y
 # Install Gazebo Fortress & Bridge
 sudo apt install ros-humble-ros-gz ros-humble-ign-ros2-control -y
 
-# Install Build Tools & GUI Libs
-sudo apt install python3-colcon-common-extensions python3-tk -y
+# Install Build Tools
+sudo apt install python3-colcon-common-extensions -y
 ```
 
 ### Step 2: Build Workspace
@@ -50,6 +82,8 @@ cd ~/slatol3d_ws
 colcon build --symlink-install
 source install/setup.bash
 ```
+
+> **Reminder:** Always run `source install/setup.bash` in every new terminal before running commands.
 
 ## 4\. Usage
 
@@ -63,89 +97,26 @@ ros2 launch slatol3d_bringup slatol.launch.py
 
 ### Manual Joint Control Test
 
-Runs a script to command specific joint angles (HAA, HFE, KFE).
+Runs the Python script to command specific joint angles (HAA, HFE, KFE).
 
 ```bash
 python3 src/slatol3d_bringup/test_control.py
 ```
 
-### GUI Control Interface
+## 5\. Demonstration & Documentation
 
-Launches a graphical interface for Manual Control and Inverse Kinematics (IK) Planner.
+To document your "Launch and Fall" tests effectively using **Peek**:
 
-```bash
-ros2 run slatol3d_bringup gui
-```
-
-## 5\. Demonstration
-
-**Successful Launch & Physics Test:**
-*(Robot spawns, gravity applies, and joints respond to commands)*
-
------
-
-### **Part 2: Setup VS Code for Simultaneous GitHub & GitLab**
-
-To push to **both** GitHub and GitLab automatically when you click "Sync/Push" in VS Code, follow these terminal commands inside your repository folder:
-
-1.  **Initialize Git (if not done):**
-
-    ```bash
-    cd ~/slatol3d_ws/src/
-    git init
-    git add .
-    git commit -m "Initial commit of SLATOL project"
-    ```
-
-2.  **Add Your Remotes:**
-
-    ```bash
-    # Add GitHub as the primary 'origin'
-    git remote add origin https://github.com/YOUR_USERNAME/slatol3d.git
-
-    # Add GitLab as a secondary remote
-    git remote add gitlab https://gitlab.com/YOUR_USERNAME/slatol3d.git
-    ```
-
-3.  **Configure "Simultaneous" Push:**
-    This command tells git that when you push to `origin`, it should push to **both** URLs.
-
-    ```bash
-    git remote set-url --add --push origin https://github.com/YOUR_USERNAME/slatol3d.git
-    git remote set-url --add --push origin https://gitlab.com/YOUR_USERNAME/slatol3d.git
-    ```
-
-4.  **Verify:**
-    Run `git remote -v`. You should see two `(push)` lines for `origin`. Now, when you use Source Control in VS Code, it updates both repositories\!
+1.  **Open Peek:** Launch the app and position the green window over Gazebo.
+2.  **Record:** Click **Record**, then run the `ros2 launch` or `test_control.py` command.
+3.  **Save:** Stop recording and save the file as `demo_launch.gif`.
+4.  **Organize:**
+      * Create a `docs` folder: `mkdir -p src/slatol3d_bringup/docs`
+      * Move the file: `mv demo_launch.gif src/slatol3d_bringup/docs/`
+5.  **Embed:** Add `![Demo](docs/demo_launch.gif)` to this README to display it.
 
 -----
 
-### **Part 3: Adding the Screen Recording**
+### **Next Step**
 
-The best way to show a "Launch and Fall" test in a README is using a **GIF**, as it auto-plays and works on all browsers.
-
-1.  **Record the Screen:**
-
-      * **Install Peek** (Simple GIF recorder for Ubuntu):
-        ```bash
-        sudo apt install peek
-        ```
-      * Open `ros2 launch...` and Gazebo.
-      * Open Peek, place the window over Gazebo, and click **Record**.
-      * Run your `test_control.py` script so the robot moves.
-      * Stop recording and save as `demo_launch.gif`.
-
-2.  **Add to Repo:**
-
-      * Create a folder named `docs` inside your package.
-      * Move the GIF there: `mv demo_launch.gif src/slatol3d_bringup/docs/`
-      * The `README.md` code provided above already links to this path (`docs/demo_launch.gif`).
-
-3.  **Push:**
-
-      * Commit the GIF file and the README.
-<<<<<<< HEAD
-      * Push to your repos.
-=======
-      * Push to your repos.
->>>>>>> c4f3c3b9e361b1068b087f9dcee203ea7fb8b051
+Would you like me to verify if your `test_control.py` script correctly targets the controllers defined in your `slatol_controllers.yaml` file to ensure the demo runs smoothly?
