@@ -28,6 +28,10 @@ setup(
     license='Apache-2.0',
     tests_require=['pytest'],
     entry_points={
-        'console_scripts': [],
+        'console_scripts': [
+            'test_control = slatol3d_bringup.test_control:main',
+            'slatol_ui = slatol3d_bringup.slatol_ui:main',
+            'slatol_planner = slatol3d_bringup.slatol_planner:main',
+        ],
     },
 )
