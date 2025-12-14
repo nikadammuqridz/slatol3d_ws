@@ -109,13 +109,25 @@ class SlatolUI(Node):
         except ValueError: pass
 
     def reset_sim(self):
-        self.get_logger().info("Resetting Robot Pose...")
-        # Ign Fortress Service Call to Teleport Entity
+        self.get_logger().info("Resetting Robot Pose & Joints...")
+        
+        # 1. Teleport Robot to Center (Slightly higher to prevent ground clipping)
+        # Note: 'ign' is correct for Gazebo Fortress.
         subprocess.Popen([
             "ign", "service", "-s", "/world/slatol_world/set_pose",
             "--reqtype", "ignition.msgs.Pose",
-            "--req", 'name: "slatol", position: {x: 0, y: 0, z: 0.6}, orientation: {x: 0, y: 0, z: 0, w: 1}'
+            "--req", 'name: "slatol", position: {x: 0, y: 0, z: 1.0}, orientation: {x: 0, y: 0, z: 0, w: 1}'
         ])
+
+        # 2. Command Joints to "Straight Standing" (0.0)
+        msg = JointTrajectory()
+        msg.joint_names = ['hip_haa_joint', 'hip_hfe_joint', 'knee_kfe_joint']
+        pt = JointTrajectoryPoint()
+        pt.positions = [0.0, 0.0, 0.0] # Straight pose
+        pt.time_from_start = Duration(sec=1, nanosec=0)
+        msg.points.append(pt)
+        self.manual_pub.publish(msg)
+        self.get_logger().info("Robot reset complete.")
 
     def update_gui(self):
         self.root.update()
