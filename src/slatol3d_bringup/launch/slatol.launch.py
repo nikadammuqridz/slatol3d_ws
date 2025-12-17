@@ -15,7 +15,7 @@ def generate_launch_description():
     xacro_file = os.path.join(pkg_slatol_description, 'urdf', 'slatol.urdf.xacro')
     robot_desc = Command(['xacro ', xacro_file])
 
-    # 1. Start Gazebo (Fortress)
+    # 1. Start Gazebo
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_ros_gz_sim, 'launch', 'gz_sim.launch.py')
@@ -23,10 +23,10 @@ def generate_launch_description():
         launch_arguments={'gz_args': '-r empty.sdf'}.items(),
     )
 
-    # 2. Spawn Robot (Higher Z to allow boom drop)
+    # 2. Spawn Robot at Z=0.8 to ensure free fall start (Leg ~0.74m)
     spawn_entity = Node(
         package='ros_gz_sim', executable='create',
-        arguments=['-topic', 'robot_description', '-name', 'slatol', '-z', '0.5', '-y', '0.0'],
+        arguments=['-topic', 'robot_description', '-name', 'slatol', '-z', '0.8', '-y', '0.0'],
         output='screen'
     )
 
@@ -46,23 +46,24 @@ def generate_launch_description():
         package="controller_manager", executable="spawner",
         arguments=["slatol_position_controller"], output="screen"
     )
-
-    # 5. UI Node
-    node_ui = Node(
-        package='slatol3d_bringup', executable='slatol_ui',
+    
+    # 5. Bridge for IMU
+    bridge = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        arguments=['/imu@sensor_msgs/msg/Imu@ignition.msgs.IMU'],
         output='screen'
     )
 
-    # 6. Planner Node
-    node_planner = Node(
-        package='slatol3d_bringup', executable='slatol_planner',
-        output='screen'
-    )
+    # 6. Nodes
+    node_ui = Node(package='slatol3d_bringup', executable='slatol_ui', output='screen')
+    node_planner = Node(package='slatol3d_bringup', executable='slatol_planner', output='screen')
 
     return LaunchDescription([
         gazebo,
         node_robot_state_publisher,
         spawn_entity,
+        bridge,
         RegisterEventHandler(
             event_handler=OnProcessExit(
                 target_action=spawn_entity,

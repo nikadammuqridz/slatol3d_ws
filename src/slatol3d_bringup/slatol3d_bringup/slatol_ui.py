@@ -19,10 +19,8 @@ class SlatolUI(Node):
         self.root.geometry("320x550")
         self.root.attributes('-topmost', True) 
 
-        # START IN PLANNER MODE
         self.mode = "PLANNER" 
         self.setup_ui()
-        
         self.ui_timer = self.create_timer(0.1, self.update_gui)
 
     def setup_ui(self):
@@ -32,24 +30,14 @@ class SlatolUI(Node):
         self.mode_btn = tk.Button(self.root, text=f"Mode: {self.mode}", bg="green", fg="white", font=("Arial", 10, "bold"), command=self.toggle_mode)
         self.mode_btn.pack(pady=5, fill="x", padx=20)
 
-        # --- MANUAL FRAME ---
+        # MANUAL FRAME
         self.manual_frame = tk.LabelFrame(self.root, text="Manual Joint Control", font=("Arial", 10, "bold"))
-        
-        tk.Label(self.manual_frame, text="HAA (Roll)").pack()
-        self.slider_haa = tk.Scale(self.manual_frame, from_=-0.5, to=0.5, resolution=0.01, orient="horizontal", command=self.send_manual)
-        self.slider_haa.pack(fill="x", padx=5)
+        self.slider_haa = self.add_slider(self.manual_frame, "HAA", -0.5, 0.5)
+        self.slider_hfe = self.add_slider(self.manual_frame, "HFE", -1.57, 1.57)
+        self.slider_kfe = self.add_slider(self.manual_frame, "KFE", -2.0, 0.0)
 
-        tk.Label(self.manual_frame, text="HFE (Hip)").pack()
-        self.slider_hfe = tk.Scale(self.manual_frame, from_=-1.57, to=1.57, resolution=0.01, orient="horizontal", command=self.send_manual)
-        self.slider_hfe.pack(fill="x", padx=5)
-
-        tk.Label(self.manual_frame, text="KFE (Knee)").pack()
-        self.slider_kfe = tk.Scale(self.manual_frame, from_=-2.0, to=0.0, resolution=0.01, orient="horizontal", command=self.send_manual)
-        self.slider_kfe.pack(fill="x", padx=5)
-
-        # --- PLANNER FRAME ---
+        # PLANNER FRAME
         self.planner_frame = tk.LabelFrame(self.root, text="Winkler Planner (NLP)", font=("Arial", 10, "bold"))
-        
         tk.Label(self.planner_frame, text="Takeoff Height (m)").grid(row=0, column=0, padx=5, pady=5)
         self.entry_height = tk.Entry(self.planner_frame, width=8)
         self.entry_height.insert(0, "0.5")
@@ -60,16 +48,18 @@ class SlatolUI(Node):
         self.entry_dist.insert(0, "0.3")
         self.entry_dist.grid(row=1, column=1)
 
-        tk.Label(self.planner_frame, text="Mode").grid(row=2, column=0, padx=5, pady=5)
-        self.var_stance = tk.StringVar(value="JUMP")
-        tk.OptionMenu(self.planner_frame, self.var_stance, "JUMP", "HOP").grid(row=2, column=1)
+        tk.Button(self.planner_frame, text="EXECUTE", bg="blue", fg="white", command=self.send_plan).grid(row=3, column=0, columnspan=2, pady=10, sticky="ew")
 
-        tk.Button(self.planner_frame, text="EXECUTE", bg="blue", fg="white", font=("Arial", 11), command=self.send_plan).grid(row=3, column=0, columnspan=2, pady=10, sticky="ew")
-
-        # --- RESET ---
+        # RESET
         tk.Button(self.root, text="RESET ROBOT POSE", bg="red", fg="white", font=("Arial", 10, "bold"), command=self.reset_sim).pack(side="bottom", fill="x", pady=20, padx=20)
 
         self.update_visibility()
+
+    def add_slider(self, frame, label, min_val, max_val):
+        tk.Label(frame, text=label).pack()
+        s = tk.Scale(frame, from_=min_val, to=max_val, resolution=0.01, orient="horizontal", command=self.send_manual)
+        s.pack(fill="x", padx=5)
+        return s
 
     def toggle_mode(self):
         self.mode = "PLANNER" if self.mode == "MANUAL" else "MANUAL"
@@ -101,33 +91,30 @@ class SlatolUI(Node):
         try:
             h = float(self.entry_height.get())
             d = float(self.entry_dist.get())
-            m = 1.0 if self.var_stance.get() == "JUMP" else 0.0
             msg = Float64MultiArray()
-            msg.data = [h, d, m]
+            msg.data = [h, d]
             self.planner_pub.publish(msg)
-            self.get_logger().info(f"Sent Plan: H={h}, D={d}")
         except ValueError: pass
 
     def reset_sim(self):
-        self.get_logger().info("Resetting Robot Pose & Joints...")
-        
-        # 1. Teleport Robot to Center (Slightly higher to prevent ground clipping)
-        # Note: 'ign' is correct for Gazebo Fortress.
+        # 1. Teleport to Z=0.8 (Safely above ground so it falls freely)
         subprocess.Popen([
             "ign", "service", "-s", "/world/slatol_world/set_pose",
             "--reqtype", "ignition.msgs.Pose",
-            "--req", 'name: "slatol", position: {x: 0, y: 0, z: 1.0}, orientation: {x: 0, y: 0, z: 0, w: 1}'
+            "--req", 'name: "slatol", position: {x: 0, y: 0, z: 0.8}, orientation: {x: 0, y: 0, z: 0, w: 1}'
         ])
-
-        # 2. Command Joints to "Straight Standing" (0.0)
+        
+        # 2. Reset Joints to Zero (Vertical)
         msg = JointTrajectory()
         msg.joint_names = ['hip_haa_joint', 'hip_hfe_joint', 'knee_kfe_joint']
         pt = JointTrajectoryPoint()
-        pt.positions = [0.0, 0.0, 0.0] # Straight pose
-        pt.time_from_start = Duration(sec=1, nanosec=0)
+        pt.positions = [0.0, 0.0, 0.0]
+        pt.time_from_start = Duration(sec=0, nanosec=100000000)
         msg.points.append(pt)
+        
+        # Force publish to ensure reset happens even in Planner mode
         self.manual_pub.publish(msg)
-        self.get_logger().info("Robot reset complete.")
+        self.manual_pub.publish(msg)
 
     def update_gui(self):
         self.root.update()
