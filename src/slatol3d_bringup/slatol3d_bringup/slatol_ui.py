@@ -61,21 +61,76 @@ class SlatolUI(Node):
         s.pack(fill="x", padx=5)
         return s
 
-    def toggle_mode(self):
-        self.mode = "PLANNER" if self.mode == "MANUAL" else "MANUAL"
-        self.mode_btn.config(text=f"Mode: {self.mode}", bg="green" if self.mode == "PLANNER" else "orange")
+    def setup_ui(self):
+        tk.Label(self.root, text="SLATOL COMMANDER", font=("Arial", 14, "bold")).pack(pady=10)
+
+        # --- NEW: 3-MODE SELECTION ---
+        self.mode_frame = tk.LabelFrame(self.root, text="Control Mode", font=("Arial", 10, "bold"))
+        self.mode_frame.pack(pady=5, fill="x", padx=20)
+        
+        # Mode 1: Manual
+        tk.Button(self.mode_frame, text="1. MANUAL", bg="orange", width=10, 
+                  command=lambda: self.set_mode("MANUAL")).pack(side="left", padx=5, pady=5)
+        
+        # Mode 2: NLP (The one that fails)
+        tk.Button(self.mode_frame, text="2. NLP", bg="gray", fg="white", width=10, 
+                  command=lambda: self.set_mode("NLP")).pack(side="left", padx=5, pady=5)
+        
+        # Mode 3: ZMP+AMC (The Success Mode)
+        tk.Button(self.mode_frame, text="3. ZMP+AMC", bg="green", fg="white", width=10, 
+                  command=lambda: self.set_mode("ZMP_AMC")).pack(side="left", padx=5, pady=5)
+        # -----------------------------
+
+        # MANUAL FRAME
+        self.manual_frame = tk.LabelFrame(self.root, text="Manual Joint Control", font=("Arial", 10, "bold"))
+        self.slider_haa = self.add_slider(self.manual_frame, "HAA", -0.5, 0.5)
+        self.slider_hfe = self.add_slider(self.manual_frame, "HFE", -1.57, 1.57)
+        self.slider_kfe = self.add_slider(self.manual_frame, "KFE", -2.0, 0.0)
+
+        # PLANNER FRAME (Shared for NLP and ZMP modes)
+        self.planner_frame = tk.LabelFrame(self.root, text="Hopping Parameters", font=("Arial", 10, "bold"))
+        tk.Label(self.planner_frame, text="Height (m)").grid(row=0, column=0, padx=5, pady=5)
+        self.entry_height = tk.Entry(self.planner_frame, width=8)
+        self.entry_height.insert(0, "0.5")
+        self.entry_height.grid(row=0, column=1)
+
+        tk.Label(self.planner_frame, text="Dist (m)").grid(row=1, column=0, padx=5, pady=5)
+        self.entry_dist = tk.Entry(self.planner_frame, width=8)
+        self.entry_dist.insert(0, "0.3")
+        self.entry_dist.grid(row=1, column=1)
+
+        tk.Button(self.planner_frame, text="EXECUTE HOP", bg="blue", fg="white", 
+                  command=self.send_plan).grid(row=3, column=0, columnspan=2, pady=10, sticky="ew")
+
+        # RESET
+        tk.Button(self.root, text="RESET ROBOT POSE", bg="red", fg="white", font=("Arial", 10, "bold"), 
+                  command=self.reset_sim).pack(side="bottom", fill="x", pady=20, padx=20)
+
         self.update_visibility()
+
+    # --- NEW METHOD ---
+    def set_mode(self, new_mode):
+        self.mode = new_mode
+        self.get_logger().info(f"Switched Mode to: {self.mode}")
+        
+        # Publish change to Planner
         msg = String()
         msg.data = self.mode
         self.mode_pub.publish(msg)
+        
+        self.update_visibility()
 
     def update_visibility(self):
-        if self.mode == "PLANNER":
-            self.manual_frame.pack_forget()
-            self.planner_frame.pack(pady=10, padx=10, fill="both")
-        else:
-            self.planner_frame.pack_forget()
+        # Hide everything first
+        self.manual_frame.pack_forget()
+        self.planner_frame.pack_forget()
+        
+        if self.mode == "MANUAL":
             self.manual_frame.pack(pady=10, padx=10, fill="both")
+        else:
+            # Both NLP and ZMP_AMC use the planner input
+            self.planner_frame.config(text=f"{self.mode} Parameters")
+            self.planner_frame.pack(pady=10, padx=10, fill="both")
 
     def send_manual(self, val):
         if self.mode != "MANUAL": return
