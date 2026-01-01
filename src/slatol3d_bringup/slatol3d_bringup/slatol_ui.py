@@ -120,14 +120,12 @@ class SlatolUI(Node):
         except ValueError: pass
 
     def run_ign_cmd(self, cmd_base):
-        # Helper to try multiple world names
-        # Standard ignition/gazebo world names
+        # Tries specific world name first, then 'default'
         worlds = ["slatol_world", "default", "empty"] 
         for w in worlds:
             cmd = cmd_base.replace("WORLD_NAME", w)
             print(f"Trying command on world: {w}")
             try:
-                # Use split to handle arguments correctly
                 subprocess.Popen(cmd.split())
                 return
             except Exception as e:
@@ -135,15 +133,24 @@ class SlatolUI(Node):
 
     def force_respawn(self):
         print("Respawning Robot...")
-        # Template command - TIMEOUT INCREASED TO 10000 (10s)
-        cmd = 'ign service -s /world/WORLD_NAME/set_pose --reqtype ignition.msgs.Pose --reptype ignition.msgs.Boolean --timeout 10000 --req name:"slatol",position:{x:0,y:0,z:0.65},orientation:{w:1,x:0,y:0,z:0}'
+        # 1. Reset Sliders to 0
+        self.slider_haa.set(0.0)
+        self.slider_hfe.set(0.0)
+        self.slider_kfe.set(0.0)
+        
+        # 2. Teleport
+        cmd = 'ign service -s /world/WORLD_NAME/set_pose --reqtype ignition.msgs.Pose --reptype ignition.msgs.Boolean --timeout 2000 --req name:"slatol",position:{x:0,y:0,z:0.65},orientation:{w:1,x:0,y:0,z:0}'
         self.run_ign_cmd(cmd)
+        
+        # 3. Notify Planner
         self.standup_pub.publish(Empty())
 
     def reset_sim(self):
         print("Resetting World...")
-        # TIMEOUT INCREASED TO 10000 (10s)
-        cmd = 'ign service -s /world/WORLD_NAME/control --reqtype ignition.msgs.WorldControl --reptype ignition.msgs.Boolean --timeout 10000 --req reset:{all:true}'
+        self.slider_haa.set(0.0)
+        self.slider_hfe.set(0.0)
+        self.slider_kfe.set(0.0)
+        cmd = 'ign service -s /world/WORLD_NAME/control --reqtype ignition.msgs.WorldControl --reptype ignition.msgs.Boolean --timeout 2000 --req reset:{all:true}'
         self.run_ign_cmd(cmd)
 
     def update_gui(self):
