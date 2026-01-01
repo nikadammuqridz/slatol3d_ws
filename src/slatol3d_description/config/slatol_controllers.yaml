@@ -1,10 +1,12 @@
 controller_manager:
   ros__parameters:
-    update_rate: 100
-    joint_state_broadcaster:
-      type: joint_state_broadcaster/JointStateBroadcaster
+    update_rate: 100  # Hz
+
     slatol_position_controller:
       type: joint_trajectory_controller/JointTrajectoryController
+
+    joint_state_broadcaster:
+      type: joint_state_broadcaster/JointStateBroadcaster
 
 slatol_position_controller:
   ros__parameters:
@@ -17,3 +19,10 @@ slatol_position_controller:
     state_interfaces:
       - position
       - velocity
+    
+    # --- THE MISSING PART (CRITICAL FOR PHYSICS) ---
+    gains:
+      hip_haa_joint: {p: 1000.0, i: 0.0, d: 20.0}
+      hip_hfe_joint: {p: 2000.0, i: 0.0, d: 50.0}
+      knee_kfe_joint: {p: 2000.0, i: 0.0, d: 50.0}
+    # -----------------------------------------------
