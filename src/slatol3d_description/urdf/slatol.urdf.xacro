@@ -65,6 +65,16 @@
       <visualize>true</visualize>
       <topic>imu</topic>
     </sensor>
+
+    <sensor name="lidar_sensor" type="gpu_lidar">
+        <pose>0 0 0 0 1.57 0</pose> <visualize>true</visualize>
+        <update_rate>50</update_rate>
+        <topic>slatol/lidar</topic>
+        <ray>
+            <scan><horizontal><samples>1</samples><resolution>1</resolution><min_angle>0</min_angle><max_angle>0</max_angle></horizontal></scan>
+            <range><min>0.05</min><max>10.0</max><resolution>0.01</resolution></range>
+        </ray>
+    </sensor>
   </link>
 
   <joint name="hip_haa_joint" type="revolute">
@@ -116,9 +126,20 @@
   
   <link name="foot_link">
      <visual><geometry><sphere radius="0.04"/></geometry><material name="Red"/></visual>
-     <collision><geometry><sphere radius="0.04"/></geometry></collision>
-     <surface><friction><ode><mu>100.0</mu><mu2>100.0</mu2></ode></friction></surface>
+     <collision>
+        <geometry><sphere radius="0.04"/></geometry>
+        <surface><friction><ode><mu>1.0</mu><mu2>1.0</mu2></ode></friction></surface>
+     </collision>
      <inertial><mass value="0.1"/><inertia ixx="0.001" iyy="0.001" izz="0.001" ixy="0" ixz="0" iyz="0"/></inertial>
+     
+     <sensor name="foot_contact" type="contact">
+        <update_rate>1000</update_rate>
+        <always_on>1</always_on>
+        <contact>
+            <collision>foot_link_fixed_joint_lump__foot_link_collision_1</collision>
+        </contact>
+        <topic>slatol/contact</topic>
+     </sensor>
   </link>
 
   <ros2_control name="IgnitionSystem" type="system">
@@ -132,7 +153,10 @@
     <plugin filename="ign_ros2_control-system" name="ign_ros2_control::IgnitionROS2ControlPlugin">
       <parameters>$(find slatol3d_description)/config/slatol_controllers.yaml</parameters>
     </plugin>
-    <plugin filename="libignition-gazebo-imu-system.so" name="ignition::gazebo::systems::Imu">
+    <plugin filename="libignition-gazebo-imu-system.so" name="ignition::gazebo::systems::Imu"></plugin>
+    <plugin filename="libignition-gazebo-contact-system.so" name="ignition::gazebo::systems::Contact"></plugin>
+    <plugin filename="libignition-gazebo-sensors-system.so" name="ignition::gazebo::systems::Sensors">
+        <render_engine>ogre2</render_engine>
     </plugin>
   </gazebo>
 </robot>
