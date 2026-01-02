@@ -1,6 +1,6 @@
 controller_manager:
   ros__parameters:
-    update_rate: 100  # Hz
+    update_rate: 100
 
     slatol_position_controller:
       type: joint_trajectory_controller/JointTrajectoryController
@@ -20,8 +20,6 @@ slatol_position_controller:
       - position
       - velocity
     
-    # --- PID GAINS (Actuator Dynamics) ---
-    # Essential for transmitting the Calculated Torque (Methodology Sec 3.4)
     gains:
       hip_haa_joint: {p: 1000.0, i: 0.0, d: 30.0}
       hip_hfe_joint: {p: 2000.0, i: 0.0, d: 50.0}

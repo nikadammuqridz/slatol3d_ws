@@ -12,17 +12,16 @@ class SlatolPlanner(Node):
     def __init__(self):
         super().__init__('slatol_planner')
         
-        # --- INTERFACES ---
+        # Interfaces
         self.create_subscription(Float64MultiArray, '/slatol/planner/goal', self.jump_command_callback, 10)
         self.create_subscription(Imu, '/imu', self.imu_callback, 10)
-        self.create_subscription(Odometry, '/odom', self.odom_callback, 10) # Velocity for Drift Calc
-        self.create_subscription(Contacts, '/slatol/contact', self.contact_callback, 10) # Event Detection
+        self.create_subscription(Odometry, '/odom', self.odom_callback, 10) 
+        self.create_subscription(Contacts, '/slatol/contact', self.contact_callback, 10) 
         self.create_subscription(String, '/slatol/mode', self.mode_callback, 10)
         self.create_subscription(Empty, '/slatol/cmd/standup', self.standup_callback, 10)
-        
         self.traj_pub = self.create_publisher(JointTrajectory, '/slatol_position_controller/joint_trajectory', 10)
         
-        # --- STATE ---
+        # State
         self.mode = "PLANNER"
         self.state = "STANCE"
         self.pitch = 0.0
@@ -35,47 +34,41 @@ class SlatolPlanner(Node):
         self.thrust_timer = None
         self.target_height = 0.5
         
-        # --- GAINS ---
-        # ZMP (Ground)
+        # Gains
         self.Kp_zmp = 0.8; self.Kd_zmp = 0.05
-        # AMC (Air)
         self.K_amc = 1.2
-        # Raibert Heuristic (Drift/Wind Rejection)
         self.K_raibert = 0.15 
         
         # Geometry
         self.L1 = 0.35; self.L2 = 0.35; self.standing_h = 0.60 
         
         self.create_timer(0.01, self.control_loop) 
-        self.get_logger().info("Slatol Event-Based Controller Ready.")
+        self.get_logger().info("Slatol Hybrid Controller Ready.")
 
     def contact_callback(self, msg):
-        """Hardware Interrupt: Ground Contact"""
-        # If contacts list is not empty, we hit something
         self.is_touching_ground = len(msg.contacts) > 0
 
     def control_loop(self):
         if self.mode != "ZMP_AMC": return
         now = self.get_clock().now().nanoseconds / 1e9
         
-        # 1. Safety
         if self.state != "FALLEN" and abs(self.pitch) > 1.3:
-            self.get_logger().warn("CRITICAL: Tipped Over.")
             self.state = "FALLEN"
+            self.get_logger().warn("CRITICAL: Tipped Over.")
         
         if self.state == "FALLEN": return
             
         elif self.state == "STANCE":
-            # [Method] Polar ZMP (Ugurlu 2008)
+            # Polar ZMP
             balance_offset = (self.Kp_zmp * self.pitch) + (self.Kd_zmp * self.pitch_rate)
             q_h, q_k = self.inverse_kinematics(0.0, -self.standing_h)
             if q_h: self.send_cmd(0.0, q_h + balance_offset, q_k, 0.05)
                 
         elif self.state == "THRUST":
             t_elapsed = now - self.jump_start_time
-            # Impulse generation
             progress = min(1.0, t_elapsed / 0.25)
             current_h = min(0.68, self.standing_h + (0.2 * progress))
+            
             q_h, q_k = self.inverse_kinematics(0.05, -current_h) 
             if q_h: self.send_cmd(0.0, q_h, q_k, 0.01)
             
@@ -85,13 +78,8 @@ class SlatolPlanner(Node):
                 self.get_logger().info("LIFTOFF -> AMC Active")
 
         elif self.state == "FLIGHT":
-            # [Method] AMC + Raibert (Ugurlu 2021 + Yim 2020)
-            
-            # A. AMC: Counter-rotate body
+            # AMC + Raibert
             amc_kick = self.K_amc * self.pitch_rate
-            
-            # B. Raibert: Place foot to stop drift (Wind/Thrust Rejection)
-            # x_land = v * T_stance/2 + k * (v - v_des)
             foot_target_x = (self.vx * 0.1) + (self.K_raibert * self.vx)
             raibert_angle = foot_target_x / 0.5 
             
@@ -99,14 +87,13 @@ class SlatolPlanner(Node):
             if q_h_nom:
                 self.send_cmd(0.0, q_h_nom + amc_kick + raibert_angle, q_k_nom, 0.02)
             
-            # C. Event-Based Landing (Robustness)
-            # If flight > 0.1s AND sensor detects ground -> LAND
+            # Event-Based Landing
             if (now - self.flight_start_time) > 0.1 and self.is_touching_ground:
                 self.state = "LANDING"
-                self.get_logger().info(f"CONTACT DETECTED: Landing. V={self.vx:.2f}")
+                self.get_logger().info(f"CONTACT DETECTED. V={self.vx:.2f}")
 
         elif self.state == "LANDING":
-            # Dampen Impact
+            # Absorb
             q_h, q_k = self.inverse_kinematics(0.15, -0.55)
             stabilizer = (self.Kp_zmp * 2.0) * self.pitch 
             if q_h: self.send_cmd(0.0, q_h + stabilizer, q_k, 0.05)
@@ -187,7 +174,11 @@ def main():
     node = SlatolPlanner()
     try: rclpy.spin(node)
     except KeyboardInterrupt: pass
-    finally: node.destroy_node(); rclpy.shutdown()
+    finally:
+        # Graceful shutdown
+        if rclpy.ok():
+            node.destroy_node()
+            rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

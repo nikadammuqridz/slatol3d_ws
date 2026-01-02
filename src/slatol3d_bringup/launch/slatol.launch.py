@@ -16,12 +16,12 @@ def generate_launch_description():
     xacro.process_doc(doc)
     robot_description = {'robot_description': doc.toxml()}
 
-    # Gazebo Sim
+    # Gazebo Sim (Clean Args)
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_ros_gz_sim, 'launch', 'gz_sim.launch.py')
         ),
-        launch_arguments={'gz_args': '-r empty.sdf --force-version 6'}.items(),
+        launch_arguments={'gz_args': '-r empty.sdf'}.items(),
     )
 
     # Robot State Publisher
@@ -40,14 +40,13 @@ def generate_launch_description():
         output='screen'
     )
 
-    # Bridge (UPDATED WITH SENSORS)
+    # Bridge (With Sensors)
     bridge = Node(
         package='ros_gz_bridge',
         executable='parameter_bridge',
         arguments=[
             '/imu@sensor_msgs/msg/Imu[ignition.msgs.IMU',
             '/odom@nav_msgs/msg/Odometry[ignition.msgs.Odometry',
-            # NEW SENSORS
             '/slatol/contact@ros_gz_interfaces/msg/Contacts[ignition.msgs.Contacts',
             '/slatol/lidar@sensor_msgs/msg/LaserScan[ignition.msgs.LaserScan',
             '/slatol/lidar/points@sensor_msgs/msg/PointCloud2[ignition.msgs.PointCloudPacked'
